@@ -1,34 +1,31 @@
+# coding=utf-8
+from __future__ import absolute_import
 import scrapy
 import pprint
+from news_scraper.items import NewsItem
 
 
 class SinaSpider(scrapy.Spider):
     name = "sina"
 
     def start_requests(self):
-        """
-        发出 http requests，对于 response 调用处理函数
-        """
         urls = [
-            'https://www.sina.com.cn/',  # 新浪首页
+            'https://www.sina.com.cn/',
         ]
         for url in urls:
             yield scrapy.Request(url=url, callback=self.parse)
 
     def parse(self, response):
-        """
-        解析 http 协议返回的 response，解析网页中的标题信息，结果输出到屏幕
-        Args:
-          response: scrapy.http.response.html.HtmlResponse 对象
-        """
-        match = ['//li/a', '//h2/a', '//h3/a']  # 常见包含文本的html标签前缀
-        suffix = ['html', 'shtml', 'htm']  # 常见网页后缀
-        # 解析，获取标题及其对应的url
+        match = ['//li/a', '//h2/a', '//h3/a']
+        suffix = ['html', 'shtml', 'htm']
+
         data = [urls.xpath("text()""|@href").extract() for i in match
                 for urls in response.xpath(i)]
-        # 过滤，得到结果
         titles = [i[1] for s in suffix for i in data
                   if len(i) == 2 and len(i[1]) > 9 and s in i[0].split('.')]
-        # 结果输出到屏幕
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(titles)
+        item = NewsItem()
+        for title in titles:
+            item['title'] = title
+            yield item
